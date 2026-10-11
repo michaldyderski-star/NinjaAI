@@ -1,13 +1,332 @@
 <!doctype html>
 <html lang="pl">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="NinjaAI — planer rocznego budżetu marketingowego z prognozą zwrotu." />
-    <title>NinjaAI — planer budżetu</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="NinjaAI — planer rocznego budżetu marketingowego z prognozą zwrotu." />
+  <title>NinjaAI — planer budżetu</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f6fa; --surface: #ffffff; --surface-2: #f1f3f8; --border: #e2e5ee;
+      --text: #161a26; --muted: #5d6478; --hover: rgba(99, 102, 241, 0.08);
+      --primary: #4f46e5; --primary-text: #ffffff;
+      --ok: #15803d; --ok-bg: #e8f6ee; --warn: #a16207; --warn-bg: #fdf6e3; --err: #b91c1c; --err-bg: #fdecec;
+      --spend: #94a3b8; --radius: 12px;
+      --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.04);
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      font-size: 15px; line-height: 1.45;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --bg: #0f1219; --surface: #171b25; --surface-2: #1f2430; --border: #2c3242;
+        --text: #e8eaf1; --muted: #9aa1b5; --hover: rgba(129, 140, 248, 0.12);
+        --primary: #818cf8; --primary-text: #0f1219;
+        --ok: #4ade80; --ok-bg: rgba(74, 222, 128, 0.12); --warn: #facc15; --warn-bg: rgba(250, 204, 21, 0.12);
+        --err: #f87171; --err-bg: rgba(248, 113, 113, 0.12); --spend: #64748b; --shadow: none;
+      }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); }
+    h1, h2 { margin: 0; }
+    h2 { font-size: 1.05rem; font-weight: 650; }
+    button, input { font: inherit; color: inherit; }
+    [hidden] { display: none !important; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+    .muted { color: var(--muted); }
+    .small { font-size: 0.85rem; }
+    .block { display: block; }
+    .neg { color: var(--err); }
+    .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .print-only { display: none; }
+    :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+    /* Layout */
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 24px; background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.1rem; }
+    .brand-sub { font-weight: 400; font-size: 0.85rem; color: var(--muted); }
+    .logo { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 9px; background: var(--primary); color: var(--primary-text); font-weight: 800; }
+    .topbar-actions { display: flex; gap: 8px; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; max-width: 1280px; margin: 0 auto; padding: 20px 24px 48px; }
+    .main, .view { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+    .sidebar .card { position: sticky; top: 76px; display: flex; flex-direction: column; gap: 12px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); }
+    .section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+    .row-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* Buttons */
+    .btn { border: 1px solid var(--border); background: var(--surface); border-radius: 8px; padding: 8px 14px; cursor: pointer; font-weight: 550; white-space: nowrap; }
+    .btn:hover:not(:disabled) { background: var(--hover); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn.primary { background: var(--primary); border-color: var(--primary); color: var(--primary-text); }
+    .btn.primary:hover:not(:disabled) { filter: brightness(1.08); background: var(--primary); }
+    .btn.ghost { border-color: transparent; }
+    .btn.small { padding: 5px 10px; font-size: 0.85rem; }
+    .btn.wide { width: 100%; }
+    .link { background: none; border: none; padding: 0; color: var(--primary); cursor: pointer; font-size: 0.85rem; }
+    .link:hover { text-decoration: underline; }
+    .link.danger { color: var(--err); }
+
+    /* Fields */
+    .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .field-label { font-size: 0.8rem; font-weight: 600; color: var(--muted); }
+    .field-box { display: flex; align-items: center; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); transition: border-color 0.15s; }
+    .field-box:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px var(--hover); }
+    .field-box.has-error { border-color: var(--err); }
+    .field-box.is-disabled { background: var(--surface-2); }
+    .field-box input { flex: 1 1 0; width: 100%; min-width: 0; border: 0; background: transparent; padding: 8px 10px; outline: none; font-variant-numeric: tabular-nums; }
+    .field-suffix { padding-right: 10px; color: var(--muted); font-size: 0.85rem; }
+    .field-error { margin: 0; color: var(--err); font-size: 0.78rem; }
+    .field-warn { margin: 4px 0 0; color: var(--warn); font-size: 0.78rem; }
+    .plan-head { display: flex; flex-direction: column; gap: 14px; }
+    .plan-fields { display: grid; grid-template-columns: minmax(0, 1fr) 110px 240px; gap: 12px; }
+    #f-budget { font-size: 1.15rem; font-weight: 650; }
+    .plan-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* KPIs */
+    .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 0; }
+    .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow); }
+    .kpi dt { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
+    .kpi dd { margin: 4px 0 0; font-size: 1.3rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+    /* Sum bar */
+    .sumbar { border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; border: 1px solid transparent; }
+    .sumbar.is-under { background: var(--warn-bg); border-color: color-mix(in srgb, var(--warn) 30%, transparent); }
+    .sumbar.is-exact { background: var(--ok-bg); border-color: color-mix(in srgb, var(--ok) 30%, transparent); }
+    .sumbar.is-over { background: var(--err-bg); border-color: color-mix(in srgb, var(--err) 30%, transparent); }
+    .sumbar-head { display: flex; justify-content: space-between; align-items: center; }
+    .sumbar-badge { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; font-size: 0.8rem; font-weight: 800; color: var(--surface); }
+    .is-under .sumbar-badge, .is-under .sumbar-fill { background: var(--warn); }
+    .is-exact .sumbar-badge, .is-exact .sumbar-fill { background: var(--ok); }
+    .is-over .sumbar-badge, .is-over .sumbar-fill { background: var(--err); }
+    .sumbar-track { height: 8px; border-radius: 4px; background: var(--surface); margin: 8px 0 6px; overflow: hidden; }
+    .sumbar-fill { height: 100%; border-radius: 4px; transition: width 0.2s; }
+    .sumbar-msg { margin: 0; font-size: 0.85rem; }
+
+    /* Allocation table */
+    .alloc-table { width: 100%; border-collapse: collapse; }
+    .alloc-table th, .alloc-table td { padding: 8px; vertical-align: top; text-align: left; }
+    .alloc-table thead th { font-size: 0.78rem; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.02em; }
+    .alloc-table thead th.num { text-align: right; }
+    .alloc-table abbr { text-decoration: underline dotted; cursor: help; }
+    .alloc-table tbody tr { border-bottom: 1px solid var(--border); }
+    .alloc-table tbody td.num { padding-top: 16px; text-align: right; }
+    .alloc-table td:nth-child(2) { width: 120px; }
+    .alloc-table td:nth-child(3) { width: 170px; }
+    .alloc-table td:nth-child(4) { width: 150px; }
+    .alloc-channel { padding-top: 16px !important; font-weight: 600; white-space: nowrap; }
+    .alloc-table tfoot th, .alloc-table tfoot td { font-weight: 700; padding-top: 12px; }
+    .alloc-table tfoot td.num { text-align: right; }
+    .alloc-table tfoot .is-under { color: var(--warn); }
+    .alloc-table tfoot .is-exact { color: var(--ok); }
+    .alloc-table tfoot .is-over { color: var(--err); }
+    .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
+    .tag { display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 999px; font-size: 0.7rem; font-weight: 600; vertical-align: 1px; }
+    .tag-best { background: var(--ok-bg); color: var(--ok); }
+    .tag-worst { background: var(--err-bg); color: var(--err); }
+    .disclaimer { margin: 12px 0 0; font-size: 0.8rem; color: var(--muted); }
+
+    /* Charts */
+    .charts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 16px; }
+    .chart { margin: 0; min-width: 0; }
+    .chart figcaption { font-weight: 650; margin-bottom: 8px; }
+    .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+    .chart-empty { color: var(--muted); font-size: 0.9rem; padding: 40px 0; text-align: center; }
+    .legend { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.85rem; }
+    .donut-total { fill: var(--text); font-weight: 700; font-size: 15px; }
+    .donut-sub { fill: var(--muted); font-size: 11px; }
+    .axis text { fill: var(--muted); font-size: 12px; }
+    .gridline { stroke: var(--border); stroke-dasharray: 3 3; }
+    .bar-spend { fill: var(--spend); }
+    .bar-profit { fill: #6366f1; }
+    .bar-loss { fill: var(--err); }
+    .seg, .bar { transition: opacity 0.15s; }
+    .seg:hover, .bar:hover { opacity: 0.8; }
+
+    /* Saved plans */
+    .plans { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+    .plan { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+    .plan.is-current { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary) inset; }
+    .plan-top { display: flex; align-items: center; gap: 8px; }
+    .plan-name { flex: 1; min-width: 0; text-align: left; background: none; border: 0; padding: 0; cursor: pointer; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .plan-name:hover { color: var(--primary); }
+    .plan-rename { flex: 1; width: 100%; border: 1px solid var(--primary); border-radius: 6px; padding: 2px 6px; background: var(--surface); }
+    .plan-meta { margin: 4px 0 6px; font-size: 0.8rem; color: var(--muted); }
+    .plan-actions { display: flex; gap: 12px; }
+    .status { font-size: 0.7rem; font-weight: 600; padding: 1px 7px; border-radius: 999px; }
+    .status-final { background: var(--ok-bg); color: var(--ok); }
+    .status-draft { background: var(--warn-bg); color: var(--warn); }
+
+    /* Compare */
+    .table-scroll { overflow-x: auto; }
+    .compare { width: 100%; border-collapse: collapse; min-width: 480px; }
+    .compare th, .compare td { padding: 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+    .compare th.num, .compare td.num { text-align: right; }
+    .compare thead th { font-size: 0.85rem; }
+    .compare tr.group th { background: var(--surface-2); font-size: 0.8rem; color: var(--muted); }
+    .diff { display: block; font-size: 0.78rem; font-weight: 600; }
+    .diff.up { color: var(--ok); }
+    .diff.down { color: var(--err); }
+
+    /* Toast */
+    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 20; padding: 10px 16px; border-radius: 10px; font-weight: 550; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18); max-width: calc(100vw - 32px); }
+    .toast-ok { background: var(--text); color: var(--bg); }
+    .toast-error { background: var(--err); color: #fff; }
+
+    @media (max-width: 1000px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar .card { position: static; }
+      .charts { grid-template-columns: 1fr; }
+      .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 700px) {
+      .topbar { padding: 10px 16px; }
+      .brand-sub { display: none; }
+      .layout { padding: 16px 16px 40px; }
+      .card { padding: 14px; }
+      .plan-fields { grid-template-columns: 1fr 1fr; }
+      .plan-fields .grow { grid-column: 1 / -1; }
+      .kpi dd { font-size: 1.1rem; }
+      .alloc-table thead { display: none; }
+      .alloc-table, .alloc-table tbody, .alloc-table tfoot, .alloc-table tr { display: block; width: 100%; }
+      .alloc-table tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 4px 12px; border: 1px solid var(--border); border-radius: 10px; padding: 10px; margin-bottom: 10px; }
+      .alloc-table th, .alloc-table td { display: block; width: auto !important; padding: 0 !important; }
+      .alloc-table tr > th { grid-column: 1 / -1; margin-bottom: 4px; white-space: normal; }
+      .alloc-table td::before { content: attr(data-label); display: block; font-size: 0.75rem; color: var(--muted); font-weight: 600; margin-bottom: 2px; }
+      .alloc-table td.num { text-align: left !important; padding-top: 6px !important; }
+      .alloc-table tfoot tr { background: var(--surface-2); }
+    }
+    @media print {
+      :root { color-scheme: light; --bg: #fff; --surface: #fff; --shadow: none; }
+      .no-print { display: none !important; }
+      .print-only { display: block; }
+      .layout { display: block; padding: 0; }
+      .card, .kpi { break-inside: avoid; }
+      .field-box { border: 0; }
+      .field-box input { padding: 0; }
+      .charts { grid-template-columns: 1fr 1fr; }
+      .print-footer { font-size: 0.8rem; color: var(--muted); }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar no-print">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">N</span>
+      <span>NinjaAI</span>
+      <span class="brand-sub">planer budżetu marketingowego</span>
+    </div>
+    <div class="topbar-actions">
+      <button type="button" class="btn ghost" id="btn-new">Nowy plan</button>
+      <button type="button" class="btn ghost" id="btn-example">Wczytaj przykład</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <main class="main">
+      <div class="view" id="view-plan">
+        <section class="card plan-head" aria-labelledby="plan-title">
+          <h1 id="plan-title" class="sr-only">Plan budżetu</h1>
+          <div class="plan-fields">
+            <div class="field grow">
+              <label for="f-name" class="field-label">Nazwa planu</label>
+              <div class="field-box"><input id="f-name" maxlength="80" autocomplete="off" /></div>
+            </div>
+            <div class="field" data-num="year">
+              <label for="f-year" class="field-label">Rok</label>
+              <div class="field-box"><input id="f-year" type="text" inputmode="numeric" autocomplete="off" /></div>
+            </div>
+            <div class="field" data-num="budget">
+              <label for="f-budget" class="field-label">Roczny budżet</label>
+              <div class="field-box"><input id="f-budget" type="text" inputmode="decimal" autocomplete="off" /><span class="field-suffix" aria-hidden="true">zł</span></div>
+            </div>
+          </div>
+          <div class="plan-buttons no-print">
+            <button type="button" class="btn primary" id="btn-save">Zapisz</button>
+            <button type="button" class="btn" id="btn-csv">Eksport CSV</button>
+            <button type="button" class="btn" id="btn-pdf">Eksport PDF</button>
+          </div>
+        </section>
+
+        <dl class="kpis" id="kpis"></dl>
+
+        <section class="card" aria-labelledby="alloc-title">
+          <div class="section-head">
+            <h2 id="alloc-title">Podział na kanały</h2>
+            <div class="row-actions no-print">
+              <button type="button" class="btn small" id="btn-distribute">Rozdziel resztę równo</button>
+              <button type="button" class="btn small" id="btn-reset">Wyzeruj podział</button>
+            </div>
+          </div>
+
+          <div class="sumbar" id="sumbar">
+            <div class="sumbar-head">
+              <span>Rozdzielono: <strong id="sum-pct"></strong> / 100%</span>
+              <span class="sumbar-badge" id="sum-badge" aria-hidden="true"></span>
+            </div>
+            <div class="sumbar-track" id="sum-track" role="progressbar" aria-label="Rozdzielona część budżetu" aria-valuemin="0" aria-valuemax="100">
+              <div class="sumbar-fill" id="sum-fill"></div>
+            </div>
+            <p class="sumbar-msg" id="sum-msg" role="status" aria-live="polite"></p>
+          </div>
+
+          <table class="alloc-table">
+            <caption class="sr-only">Podział budżetu i spodziewany zwrot według kanałów</caption>
+            <thead>
+              <tr>
+                <th scope="col">Kanał</th>
+                <th scope="col">% budżetu</th>
+                <th scope="col">Kwota</th>
+                <th scope="col"><abbr title="Zysk netto ÷ wydana kwota × 100%. ROI 150% przy 10 000 zł to 15 000 zł zysku.">Spodziewany ROI</abbr></th>
+                <th scope="col" class="num">Zwrot</th>
+                <th scope="col" class="num">Wartość końcowa</th>
+              </tr>
+            </thead>
+            <tbody id="alloc-body"></tbody>
+            <tfoot>
+              <tr>
+                <th scope="row">Suma</th>
+                <td data-label="% budżetu" class="num" id="t-share"></td>
+                <td data-label="Kwota" class="num" id="t-amount"></td>
+                <td data-label="Ważony ROI" class="num" id="t-roi"></td>
+                <td data-label="Zwrot" class="num" id="t-profit"></td>
+                <td data-label="Wartość końcowa" class="num" id="t-final"></td>
+              </tr>
+            </tfoot>
+          </table>
+          <p class="disclaimer">Wartości szacunkowe na podstawie Twoich założeń — to prognoza, nie gwarancja wyniku.</p>
+        </section>
+
+        <div class="charts">
+          <figure class="card chart">
+            <figcaption>Podział budżetu</figcaption>
+            <div id="chart-donut"></div>
+          </figure>
+          <figure class="card chart">
+            <figcaption>Wydatek vs. oczekiwany zwrot</figcaption>
+            <div id="chart-bars"></div>
+          </figure>
+        </div>
+
+        <p class="print-only print-footer" id="print-footer"></p>
+      </div>
+
+      <section class="card" id="view-compare" hidden></section>
+    </main>
+
+    <aside class="sidebar no-print" aria-labelledby="plans-title">
+      <div class="card">
+        <h2 id="plans-title">Zapisane plany</h2>
+        <div id="plan-list"></div>
+        <button type="button" class="btn wide" id="btn-compare" hidden></button>
+      </div>
+    </aside>
+  </div>
+
+  <div class="toast no-print" id="toast" hidden></div>
+
+  <script src="js/calc.js"></script>
+  <script src="js/app.js"></script>
+</body>
 </html>

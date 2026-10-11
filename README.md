@@ -19,12 +19,21 @@ Wymagania produktowe: [docs/PRD.md](docs/PRD.md).
 
 ## Uruchomienie
 
+Czysty HTML + JavaScript — bez frameworków, bibliotek i kroku budowania.
+Wystarczy otworzyć `index.html` w przeglądarce (dwuklik) albo wrzucić katalog na dowolny hosting statyczny.
+
+```
+index.html      # układ strony i style
+js/calc.js      # obliczenia, formatowanie, CSV (czyste funkcje)
+js/app.js       # interfejs: formularz, tabela, wykresy SVG, zapis, porównanie
+tests/          # testy jednostkowe obliczeń
+```
+
+Testy (wymagają tylko Node.js 18+, bez instalowania pakietów):
+
 ```bash
-npm install
-npm run dev        # serwer deweloperski
-npm test           # testy jednostkowe (obliczenia, formatowanie, CSV)
-npm run build      # typecheck + build produkcyjny do dist/
+node --test
 ```
 
 Obliczenia działają na liczbach całkowitych (grosze, setne części procenta), więc kwoty kanałów
-sumują się dokładnie do budżetu. Logika jest w `src/lib/calc.ts`.
+sumują się dokładnie do budżetu. Logika jest w `js/calc.js`.

@@ -189,13 +189,14 @@ interface BudgetPlan {
 | **v1.1** | Konta użytkowników, zapis w chmurze, udostępnianie linkiem (FR-22, FR-25), wersja EN |
 | **v2** | Własne kanały (dodawanie/usuwanie), podział budżetu na miesiące, rzeczywiste wyniki vs. plan, rekomendacje podziału przez AI na podstawie branży i historycznego ROI |
 
-## 11. Propozycja stosu technicznego (MVP)
+## 11. Stos techniczny (MVP)
 
-- Frontend: React + TypeScript (Vite lub Next.js), biblioteka wykresów (np. Recharts), walidacja formularzy (np. Zod).
-- Obliczenia: wydzielony, czysto funkcyjny moduł `budget-calc` z testami jednostkowymi.
+- Czysty HTML, CSS i JavaScript — bez frameworków, zewnętrznych bibliotek i kroku budowania; aplikacja działa po otwarciu `index.html`.
+- Obliczenia: wydzielony, czysto funkcyjny moduł `js/calc.js` z testami jednostkowymi (`node --test`).
+- Wykresy: rysowane jako inline SVG.
 - Przechowywanie: `localStorage` (MVP), backend + baza (np. PostgreSQL) od v1.1.
-- Eksport: CSV generowany po stronie klienta, PDF przez bibliotekę klienta lub druk do PDF.
-- Hosting: statyczny (Vercel / Netlify / Cloudflare Pages).
+- Eksport: CSV generowany po stronie klienta, PDF przez druk do PDF.
+- Hosting: dowolny statyczny (GitHub Pages / Netlify / Cloudflare Pages).
 
 ## 12. Kryteria akceptacji MVP (wybrane)
 
