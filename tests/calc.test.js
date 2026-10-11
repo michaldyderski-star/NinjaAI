@@ -16,10 +16,10 @@ test("amount per channel (PRD §12)", () => {
   assert.equal(C.calculatePlan(10000000, withShares([25])).channels[0].amount, 2500000);
 });
 
-test("profit and final value for ROI 200% (PRD §12)", () => {
+test("return and final value (return − invested) for ROI 200% (PRD §12)", () => {
   const c = C.calculatePlan(10000000, withShares([25], [200])).channels[0];
-  assert.equal(c.profit, 5000000);
-  assert.equal(c.finalValue, 7500000);
+  assert.equal(c.returnAmount, 5000000);
+  assert.equal(c.finalValue, 2500000);
 });
 
 test("PRD §8 example: weighted ROI 111%", () => {
@@ -27,8 +27,8 @@ test("PRD §8 example: weighted ROI 111%", () => {
   const r = C.calculatePlan(p.annualBudget, p.allocations);
   assert.equal(r.sumState, "exact");
   assert.equal(r.totalAmount, 12000000);
-  assert.equal(r.totalProfit, 13320000);
-  assert.equal(r.totalFinalValue, 25320000);
+  assert.equal(r.totalReturn, 13320000);
+  assert.equal(r.totalFinalValue, 1320000);
   close(r.weightedRoiPercent, 111);
   assert.equal(r.bestChannel, "social_media");
   assert.equal(r.worstChannel, "newspaper");
@@ -54,23 +54,30 @@ test("no floating point drift with 33.33/33.33/33.34", () => {
   assert.equal(r.totalAmount, 100);
 });
 
-test("ROI -100% loses the whole spend", () => {
-  const r = C.calculatePlan(1000000, withShares([100], [-100]));
-  assert.equal(r.totalProfit, -1000000);
-  assert.equal(r.totalFinalValue, 0);
-  assert.equal(r.weightedRoiPercent, -100);
+test("return below 100% gives a negative final value", () => {
+  const r = C.calculatePlan(1000000, withShares([100], [40]));
+  assert.equal(r.totalReturn, 400000);
+  assert.equal(r.totalFinalValue, -600000);
+  assert.equal(r.channels[0].finalValue, -600000);
+});
+
+test("0% return loses the whole spend", () => {
+  const r = C.calculatePlan(1000000, withShares([100], [0]));
+  assert.equal(r.totalReturn, 0);
+  assert.equal(r.totalFinalValue, -1000000);
+  assert.equal(r.weightedRoiPercent, 0);
 });
 
 test("null weighted ROI when nothing is spent", () => {
   const r = C.calculatePlan(0, withShares([100], [50]));
   assert.equal(r.weightedRoiPercent, null);
-  assert.equal(r.channels[0].profitSharePercent, null);
+  assert.equal(r.channels[0].returnSharePercent, null);
 });
 
-test("share of total profit", () => {
+test("share of total return", () => {
   const r = C.calculatePlan(10000, withShares([50, 50], [100, 300]));
-  assert.equal(r.channels[0].profitSharePercent, 25);
-  assert.equal(r.channels[1].profitSharePercent, 75);
+  assert.equal(r.channels[0].returnSharePercent, 25);
+  assert.equal(r.channels[1].returnSharePercent, 75);
 });
 
 test("no best/worst when ROI is equal", () => {
@@ -136,8 +143,8 @@ test("CSV has 6 channels and a correct total row (PRD §12)", () => {
   const p = C.examplePlan();
   const lines = C.planToCsv(p, C.calculatePlan(p.annualBudget, p.allocations)).split("\r\n");
   const h = lines.findIndex((l) => l.startsWith("Kanał;"));
-  assert.equal(lines[h + 1], "Social media;35,00;42000,00;180,00;75600,00;117600,00");
-  assert.equal(lines[h + 7], "SUMA;100,00;120000,00;111,00;133200,00;253200,00");
+  assert.equal(lines[h + 1], "Social media;35,00;42000,00;180,00;75600,00;33600,00");
+  assert.equal(lines[h + 7], "SUMA;100,00;120000,00;111,00;133200,00;13200,00");
 });
 
 test("safeFilename", () => {

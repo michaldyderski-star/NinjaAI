@@ -10,7 +10,8 @@ Wymagania produktowe: [docs/PRD.md](docs/PRD.md).
 
 - Podział budżetu w % lub w zł (przeliczanie w obie strony), walidacja sumy 100%
 - „Rozdziel resztę równo” i „Wyzeruj podział”
-- Spodziewany ROI per kanał (−100% … 10 000%), wyróżnienie najwyższego i najniższego ROI
+- Spodziewany % zwrotu per kanał (0% … 10 000%), wyróżnienie najwyższego i najniższego
+- Wartość końcowa = zwrot − kwota zainwestowana (zysk lub strata netto)
 - Tabela wyników, karty KPI, wykres podziału i wykres wydatek vs. zwrot
 - Zapis planów w przeglądarce (szkic / gotowy), zmiana nazwy, duplikowanie, usuwanie
 - Porównanie do 3 scenariuszy obok siebie

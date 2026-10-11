@@ -221,7 +221,7 @@
         tag: tr.querySelector(".tag"),
         amountInput: amountInput,
         warn: tr.querySelector(".field-warn"),
-        profit: tr.children[4],
+        ret: tr.children[4],
         final: tr.children[5],
       });
     });
@@ -261,9 +261,9 @@
       row.warn.hidden = !(plan.allocations[i].expectedRoiPercent > C.ROI_WARN);
       row.amountInput.disabled = plan.annualBudget <= 0;
       row.amountInput.closest(".field-box").classList.toggle("is-disabled", plan.annualBudget <= 0);
-      row.profit.textContent = C.formatMoney(c.profit);
-      row.profit.classList.toggle("neg", c.profit < 0);
+      row.ret.textContent = C.formatMoney(c.returnAmount);
       row.final.textContent = C.formatMoney(c.finalValue);
+      row.final.classList.toggle("neg", c.finalValue < 0);
     });
 
     // Totals
@@ -272,16 +272,16 @@
     $("t-share").className = "num is-" + r.sumState;
     $("t-amount").textContent = C.formatMoney(r.totalAmount);
     $("t-roi").textContent = roiText;
-    $("t-profit").textContent = C.formatMoney(r.totalProfit);
-    $("t-profit").classList.toggle("neg", r.totalProfit < 0);
+    $("t-return").textContent = C.formatMoney(r.totalReturn);
     $("t-final").textContent = C.formatMoney(r.totalFinalValue);
+    $("t-final").classList.toggle("neg", r.totalFinalValue < 0);
 
     // KPIs
     $("kpis").innerHTML = [
       ["Budżet", C.formatMoney(plan.annualBudget), false],
-      ["Łączny zwrot", C.formatMoney(r.totalProfit), r.totalProfit < 0],
-      ["Wartość końcowa", C.formatMoney(r.totalFinalValue), false],
-      ["Ważony ROI", roiText, (r.weightedRoiPercent || 0) < 0],
+      ["Łączny zwrot", C.formatMoney(r.totalReturn), false],
+      ["Wartość końcowa", C.formatMoney(r.totalFinalValue), r.totalFinalValue < 0],
+      ["Ważony ROI", roiText, false],
     ].map(function (k) {
       return '<div class="kpi"><dt>' + k[0] + "</dt><dd" + (k[2] ? ' class="neg"' : "") + ">" + k[1] + "</dd></div>";
     }).join("");
@@ -378,7 +378,7 @@
     var iw = W - m.l - m.r, ih = H - m.t - m.b;
 
     var values = [0];
-    r.channels.forEach(function (c) { values.push(c.amount, c.profit); });
+    r.channels.forEach(function (c) { values.push(c.amount, c.returnAmount); });
     var ticks = niceTicks(Math.min.apply(null, values), Math.max.apply(null, values), 4);
     var lo = ticks[0], hi = ticks[ticks.length - 1];
     var y = function (v) { return m.t + ih - ((v - lo) / (hi - lo)) * ih; };
@@ -396,7 +396,7 @@
     r.channels.forEach(function (c, i) {
       var ch = C.channel(c.channel);
       var cx = m.l + band * i + band / 2;
-      [["Wydatek", c.amount, "bar-spend", cx - bw - 1], ["Zwrot", c.profit, c.profit < 0 ? "bar-loss" : "bar-profit", cx + 1]].forEach(function (b) {
+      [["Wydatek", c.amount, "bar-spend", cx - bw - 1], ["Zwrot", c.returnAmount, "bar-return", cx + 1]].forEach(function (b) {
         var top = Math.min(y(b[1]), y(0));
         var h = Math.abs(y(b[1]) - y(0));
         var rect = svg("rect", { class: "bar " + b[2], x: b[3], y: top, width: bw, height: Math.max(h, b[1] === 0 ? 0 : 1), rx: 3 }, root);
@@ -562,7 +562,7 @@
         return C.formatMoney(plans[i].annualBudget) + diffHtml(i, diffMoney(plans[i].annualBudget - plans[0].annualBudget));
       }) +
       row("Łączny zwrot", function (r, i) {
-        return C.formatMoney(r.totalProfit) + diffHtml(i, diffMoney(r.totalProfit - base.totalProfit));
+        return C.formatMoney(r.totalReturn) + diffHtml(i, diffMoney(r.totalReturn - base.totalReturn));
       }) +
       row("Wartość końcowa", function (r, i) {
         return C.formatMoney(r.totalFinalValue) + diffHtml(i, diffMoney(r.totalFinalValue - base.totalFinalValue));

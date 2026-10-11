@@ -17,7 +17,7 @@
   ];
 
   var FULL_SHARE = 10000;
-  var ROI_MIN = -100;
+  var ROI_MIN = 0;
   var ROI_MAX = 10000;
   var ROI_WARN = 1000;
 
@@ -116,11 +116,12 @@
   function calculatePlan(budget, allocations) {
     var shares = allocations.map(function (a) { return toHundredths(a.sharePercent); });
     var amounts = splitBudget(budget, shares);
-    var profits = allocations.map(function (a, i) {
+    // Expected return: what comes back from the money spent (amount × return %).
+    var returns = allocations.map(function (a, i) {
       return Math.round((amounts[i] * toHundredths(a.expectedRoiPercent)) / FULL_SHARE);
     });
     var totalAmount = sum(amounts);
-    var totalProfit = sum(profits);
+    var totalReturn = sum(returns);
     var allocated = sum(shares);
 
     var channels = allocations.map(function (a, i) {
@@ -129,9 +130,10 @@
         sharePercent: fromHundredths(shares[i]),
         roiPercent: fromHundredths(toHundredths(a.expectedRoiPercent)),
         amount: amounts[i],
-        profit: profits[i],
-        finalValue: amounts[i] + profits[i],
-        profitSharePercent: totalProfit !== 0 ? (profits[i] / totalProfit) * 100 : null,
+        returnAmount: returns[i],
+        // Final value = return minus the amount invested (net gain or loss).
+        finalValue: returns[i] - amounts[i],
+        returnSharePercent: totalReturn !== 0 ? (returns[i] / totalReturn) * 100 : null,
       };
     });
 
@@ -151,9 +153,9 @@
       remainingAmount: budget - totalAmount,
       sumState: sumState(allocated),
       totalAmount: totalAmount,
-      totalProfit: totalProfit,
-      totalFinalValue: totalAmount + totalProfit,
-      weightedRoiPercent: totalAmount > 0 ? (totalProfit / totalAmount) * 100 : null,
+      totalReturn: totalReturn,
+      totalFinalValue: totalReturn - totalAmount,
+      weightedRoiPercent: totalAmount > 0 ? (totalReturn / totalAmount) * 100 : null,
       bestChannel: best,
       worstChannel: worst,
     };
@@ -243,10 +245,10 @@
     ];
     result.channels.forEach(function (c) {
       rows.push([channel(c.channel).label, csvPct(c.sharePercent), csvZl(c.amount),
-        csvPct(c.roiPercent), csvZl(c.profit), csvZl(c.finalValue)]);
+        csvPct(c.roiPercent), csvZl(c.returnAmount), csvZl(c.finalValue)]);
     });
     rows.push(["SUMA", csvPct(result.allocatedPercent), csvZl(result.totalAmount),
-      csvPct(result.weightedRoiPercent), csvZl(result.totalProfit), csvZl(result.totalFinalValue)]);
+      csvPct(result.weightedRoiPercent), csvZl(result.totalReturn), csvZl(result.totalFinalValue)]);
     return "﻿" + rows.map(function (r) { return r.map(csvEscape).join(";"); }).join("\r\n");
   }
 

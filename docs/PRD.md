@@ -81,8 +81,8 @@ w arkuszach kalkulacyjnych albo „na oko”. Skutki:
 - **FR-10** Przycisk „Wyzeruj podział”.
 
 ### 6.3 Spodziewany zwrot (ROI)
-- **FR-11** Dla każdego kanału pole „Spodziewany % zwrotu” — liczba od **−100** do **10 000**, maks. 2 miejsca po przecinku. Wartość domyślna: 0.
-- **FR-12** Definicja (wyświetlana w tooltipie): *ROI = zysk netto ÷ wydana kwota × 100%*. Przykład: ROI 150% przy wydatku 10 000 zł oznacza 15 000 zł zysku, czyli 25 000 zł wartości końcowej.
+- **FR-11** Dla każdego kanału pole „Spodziewany % zwrotu” — liczba od **0** do **10 000**, maks. 2 miejsca po przecinku. Wartość domyślna: 0.
+- **FR-12** Definicja (wyświetlana w tooltipie): *% zwrotu = kwota, która wraca z inwestycji ÷ wydana kwota × 100%*. **Wartość końcowa = zwrot − kwota zainwestowana** (zysk lub strata netto). Przykład: 150% przy wydatku 10 000 zł oznacza zwrot 15 000 zł i wartość końcową 5000 zł; 40% oznacza zwrot 4000 zł i wartość końcową −6000 zł.
 
 ### 6.4 Obliczenia
 Dla budżetu `B`, udziału kanału `p_i` (%) i ROI kanału `r_i` (%):
@@ -90,10 +90,11 @@ Dla budżetu `B`, udziału kanału `p_i` (%) i ROI kanału `r_i` (%):
 | Wielkość | Wzór |
 |---|---|
 | Kwota na kanał | `K_i = B × p_i / 100` |
-| Oczekiwany zwrot (zysk) kanału | `Z_i = K_i × r_i / 100` |
-| Wartość końcowa kanału | `W_i = K_i + Z_i` |
+| Oczekiwany zwrot kanału | `Z_i = K_i × r_i / 100` |
+| Wartość końcowa kanału (zwrot − kwota zainwestowana) | `W_i = Z_i − K_i` |
 | Łączna wydana kwota | `K = Σ K_i` |
 | Łączny oczekiwany zwrot | `Z = Σ Z_i` |
+| Łączna wartość końcowa | `W = Z − K` |
 | Ważony ROI planu | `ROI = Z / K × 100%` (gdy `K > 0`) |
 | Udział kanału w łącznym zwrocie | `Z_i / Z × 100%` (gdy `Z ≠ 0`) |
 
@@ -165,7 +166,7 @@ type ChannelId = "social_media" | "www" | "radio" | "tv" | "billboard" | "newspa
 interface ChannelAllocation {
   channel: ChannelId;
   sharePercent: number;      // 0–100
-  expectedRoiPercent: number; // -100–10000
+  expectedRoiPercent: number; // 0–10000
 }
 
 interface BudgetPlan {
@@ -201,10 +202,11 @@ interface BudgetPlan {
 ## 12. Kryteria akceptacji MVP (wybrane)
 
 - [ ] Po wpisaniu budżetu 100 000 zł i 25% dla Social media kwota kanału wynosi 25 000,00 zł.
-- [ ] Przy ROI 200% dla tego kanału zwrot wynosi 50 000,00 zł, a wartość końcowa 75 000,00 zł.
+- [ ] Przy ROI 200% dla tego kanału zwrot wynosi 50 000,00 zł, a wartość końcowa (zwrot − kwota) 25 000,00 zł.
 - [ ] Suma % = 99,99% blokuje status „final” i eksport; komunikat wskazuje brakujące 0,01%.
 - [ ] Suma % > 100% wyświetla błąd i wskazuje nadwyżkę w % i zł.
-- [ ] ROI < −100% jest odrzucane z komunikatem walidacji.
+- [ ] % zwrotu < 0 jest odrzucany z komunikatem walidacji.
+- [ ] Przy zwrocie < 100% wartość końcowa jest ujemna i wyróżniona kolorem straty.
 - [ ] Ważony ROI dla przykładu z §8 wynosi 111,00%.
 - [ ] Zapisany plan jest dostępny po odświeżeniu strony.
 - [ ] Eksport CSV zawiera 6 kanałów i wiersz sumy z poprawnymi wartościami.
@@ -214,7 +216,7 @@ interface BudgetPlan {
 
 | # | Pytanie / ryzyko | Proponowane rozwiązanie |
 |---|---|---|
-| 1 | Czy „% zwrotu” oznacza ROI (zysk netto) czy ROAS (przychód ÷ wydatek)? | MVP: ROI zgodnie z §6.3; rozważyć przełącznik ROI/ROAS |
+| 1 | Czy „% zwrotu” oznacza zysk netto czy całą kwotę, która wraca? | **Rozstrzygnięte:** % zwrotu to cała kwota, która wraca; wartość końcowa = zwrot − kwota zainwestowana (§6.3) |
 | 2 | Czy użytkownik potrzebuje własnych kanałów (np. e-mail, eventy, outdoor)? | v2; w MVP stała lista 6 kanałów |
 | 3 | Czy wymagane jest konto już w MVP? | Nie — zapis lokalny obniża próg wejścia |
 | 4 | Użytkownicy mogą wpisywać nierealne ROI | Ostrzeżenie (nie blokada) przy ROI > 1000% |

@@ -139,8 +139,7 @@
     .axis text { fill: var(--muted); font-size: 12px; }
     .gridline { stroke: var(--border); stroke-dasharray: 3 3; }
     .bar-spend { fill: var(--spend); }
-    .bar-profit { fill: #6366f1; }
-    .bar-loss { fill: var(--err); }
+    .bar-return { fill: #6366f1; }
     .seg, .bar { transition: opacity 0.15s; }
     .seg:hover, .bar:hover { opacity: 0.8; }
 
@@ -278,7 +277,7 @@
                 <th scope="col">Kanał</th>
                 <th scope="col">% budżetu</th>
                 <th scope="col">Kwota</th>
-                <th scope="col"><abbr title="Zysk netto ÷ wydana kwota × 100%. ROI 150% przy 10 000 zł to 15 000 zł zysku.">Spodziewany ROI</abbr></th>
+                <th scope="col"><abbr title="Ile wróci z wydanej kwoty, w %. Przy 150% i wydatku 10 000 zł zwrot to 15 000 zł, a wartość końcowa (zwrot − wydatek) to 5000 zł.">Spodziewany ROI</abbr></th>
                 <th scope="col" class="num">Zwrot</th>
                 <th scope="col" class="num">Wartość końcowa</th>
               </tr>
@@ -290,7 +289,7 @@
                 <td data-label="% budżetu" class="num" id="t-share"></td>
                 <td data-label="Kwota" class="num" id="t-amount"></td>
                 <td data-label="Ważony ROI" class="num" id="t-roi"></td>
-                <td data-label="Zwrot" class="num" id="t-profit"></td>
+                <td data-label="Zwrot" class="num" id="t-return"></td>
                 <td data-label="Wartość końcowa" class="num" id="t-final"></td>
               </tr>
             </tfoot>
